@@ -172,3 +172,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Audio recordings
+audio/audio_question.mp3
+audio/audio_response.mp3

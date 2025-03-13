@@ -13,6 +13,6 @@ class Settings(BaseSettings):
     TEMPERATURE: int = 0
 
     # Document Ingestion
-    AUDIO_PATH: Optional[str] = f"{root}/audio/"
+    AUDIO_PATH: Optional[str] = f"{root}\\audio\\"
 
 settings = Settings()
