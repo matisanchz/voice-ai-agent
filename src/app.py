@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 from langchain_openai import ChatOpenAI
@@ -58,7 +59,11 @@ def get_documents_from_web(url):
 
 def create_db(docs):
     embedding = OpenAIEmbeddings()
-    vectorStore = Chroma.from_documents(docs, embedding = embedding)
+
+    persist_directory = settings.CHAT_PATH+"chat.json"
+
+    vectorStore = Chroma.from_documents(docs, embedding = embedding, persist_directory=persist_directory)
+
     return vectorStore
 
 def create_chain(vectorStore):
@@ -97,6 +102,8 @@ def create_chain(vectorStore):
     return retrieval_chain
 
 def retrieval_chain(input_text, chat_history):
+    if not os.path.exists(settings.CHAT_PATH):
+        os.makedirs(settings.CHAT_PATH)
     docs = get_documents_from_web('https://atomchat.io/acerca-de-nosotros/')
     vectorStore = create_db(docs)
     chain = create_chain(vectorStore)
@@ -118,6 +125,10 @@ def main():
     # Check if recording is done and available
     if recorded_audio:
         openai.api_key = settings.OPENAI_API_KEY
+
+        if not os.path.exists(settings.AUDIO_PATH):
+            os.makedirs(settings.AUDIO_PATH)
+
         audio_question_file = settings.AUDIO_PATH+"audio_question.mp3"
 
         with open(audio_question_file, "wb") as f:

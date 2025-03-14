@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     LANGCHAIN_VERBOSE: bool = False
     TEMPERATURE: int = 0
 
-    # Document Ingestion
     AUDIO_PATH: Optional[str] = f"{root}\\audio\\"
+    CHAT_PATH: Optional[str] = f"{root}\\chat\\"
 
 settings = Settings()
