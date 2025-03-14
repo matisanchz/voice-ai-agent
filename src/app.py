@@ -12,6 +12,14 @@ def transcribe_audio(audio_path):
         transcript = openai.audio.transcriptions.create(model="whisper-1", file=audio_file)
         return transcript.text
 
+def get_ai_response(input_text):
+    response = llm_gpt([HumanMessage(content=input_text)])
+    return response.content
+
+def text_to_audio(client, text, audio_path):
+    response = client.audio.speech.create(model="tts-1", voice="onyx", input=text)
+    response.stream_to_file(audio_path)
+
 def main():
     st.title("Atom Voice Agent")
     st.write("Hi! Click on the voice recorder to interact with me.")
@@ -26,8 +34,9 @@ def main():
             f.write(recorded_audio)
 
         transcribed_text = transcribe_audio(audio_file)
+        st.write(transcribed_text)
 
-        print(transcribed_text)
+        
 
 if __name__ == "__main__":
     main()
