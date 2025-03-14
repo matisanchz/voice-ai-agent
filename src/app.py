@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from config import settings
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 import openai
+import base64
 
 llm_gpt = ChatOpenAI(model=settings.OPENAI_LLM_MODEL, temperature=settings.TEMPERATURE)
 
@@ -19,6 +20,13 @@ def get_ai_response(input_text):
 def text_to_audio(client, text, audio_path):
     response = client.audio.speech.create(model="tts-1", voice="onyx", input=text)
     response.stream_to_file(audio_path)
+
+def play_ai_response(audio_file):
+    with open(audio_file, "rb") as audio_file:
+        audio_bytes = audio_file.read()
+    base64_audio=base64.b64encode(audio_bytes).decode("utf-8")
+    audio_html=f'<audio src="data:audio/mp3;base64,{base64_audio}" controls autoplay>'
+    st.markdown(audio_html, unsafe_allow_html=True)
 
 def main():
     st.title("Atom Voice Agent")
@@ -40,6 +48,7 @@ def main():
         ai_response = get_ai_response(transcribed_text)
         response_audio_file = settings.AUDIO_PATH+"audio_response.mp3"
         text_to_audio(openai, ai_response, response_audio_file)
+        play_ai_response(response_audio_file)
         st.write(ai_response)
 
 if __name__ == "__main__":
