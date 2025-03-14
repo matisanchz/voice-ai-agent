@@ -29,14 +29,18 @@ def main():
     # Check if recording is done and available
     if recorded_audio:
         openai.api_key = settings.OPENAI_API_KEY
-        audio_file = settings.AUDIO_PATH+"audio_question.mp3"
-        with open(audio_file, "wb") as f:
+        audio_question_file = settings.AUDIO_PATH+"audio_question.mp3"
+
+        with open(audio_question_file, "wb") as f:
             f.write(recorded_audio)
 
-        transcribed_text = transcribe_audio(audio_file)
+        transcribed_text = transcribe_audio(audio_question_file)
         st.write(transcribed_text)
 
-        
+        ai_response = get_ai_response(transcribed_text)
+        response_audio_file = settings.AUDIO_PATH+"audio_response.mp3"
+        text_to_audio(openai, ai_response, response_audio_file)
+        st.write(ai_response)
 
 if __name__ == "__main__":
     main()
