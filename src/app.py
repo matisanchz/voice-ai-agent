@@ -7,7 +7,8 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores.faiss import FAISS
+from langchain_chroma import Chroma
+
 from langchain.chains import create_retrieval_chain
 
 from config import settings
@@ -27,6 +28,8 @@ def get_ai_response(input_text):
 
     response = retrieval_chain(input_text)
 
+    print(response["answer"])
+
     return response["answer"]
 
 def text_to_audio(client, text, audio_path):
@@ -43,7 +46,7 @@ def play_ai_response(audio_file):
 def get_documents_from_web(url):
     loader = WebBaseLoader(url)
     docs = loader.load()
-    
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size = 100,
         chunk_overlap = 20
@@ -53,7 +56,7 @@ def get_documents_from_web(url):
 
 def create_db(docs):
     embedding = OpenAIEmbeddings()
-    vectorStore = FAISS.from_documents(docs, embedding = embedding)
+    vectorStore = Chroma.from_documents(docs, embedding = embedding)
     return vectorStore
 
 def create_chain(vectorStore):

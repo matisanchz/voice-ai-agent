@@ -4,5 +4,6 @@ openai
 langchain
 langchain-openai
 langchain_community
+langchain_chroma
 python-dotenv
 bs4
