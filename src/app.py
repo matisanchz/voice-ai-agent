@@ -8,6 +8,8 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
+from langchain_core.prompts import MessagesPlaceholder
+from langchain.chains.history_aware_retriever import create_history_aware_retriever
 
 from langchain.chains import create_retrieval_chain
 
@@ -22,11 +24,11 @@ def transcribe_audio(audio_path):
         transcript = openai.audio.transcriptions.create(model="whisper-1", file=audio_file)
         return transcript.text
 
-def get_ai_response(input_text):
+def get_ai_response(input_text, chat_history):
 
     #response = llm_gpt([HumanMessage(content=input_text)])
 
-    response = retrieval_chain(input_text)
+    response = retrieval_chain(input_text, chat_history)
 
     print(response["answer"])
 
@@ -60,11 +62,11 @@ def create_db(docs):
     return vectorStore
 
 def create_chain(vectorStore):
-    prompt = ChatPromptTemplate.from_template("""
-        Answer the user's question:
-        Context: {context}
-        Question: {input}
-        """)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are an AtomChai voice assistant, capable to answer and guide leads. Answer the user's questions based on the context: {context}"),
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("human", "{input}") 
+    ])
 
     chain = create_stuff_documents_chain(
         llm=llm_gpt,
@@ -75,27 +77,44 @@ def create_chain(vectorStore):
     #retrieve info
     # search_kwargs={"k":2} search for the 2 most relevant docs
     retriever = vectorStore.as_retriever(search_kwargs={"k":2})
+
+    retriever_prompt = ChatPromptTemplate.from_messages([
+        MessagesPlaceholder(variable_name = "chat_history"),
+        ("human", "{input}"),
+        ("human", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation.")
+    ])
+
+    history_aware_retriever = create_history_aware_retriever(
+        llm=llm_gpt,
+        retriever=retriever,
+        prompt=retriever_prompt
+    )
+
     retrieval_chain = create_retrieval_chain(
-        retriever,
+        history_aware_retriever,
         chain
     )
     return retrieval_chain
 
-def retrieval_chain(input_text):
+def retrieval_chain(input_text, chat_history):
     docs = get_documents_from_web('https://atomchat.io/acerca-de-nosotros/')
     vectorStore = create_db(docs)
     chain = create_chain(vectorStore)
     
     return chain.invoke({
-        "input": input_text
+        "input": input_text,
+        "chat_history": chat_history
     })
 
 def main():
     st.title("Atom Voice Agent")
     st.write("Hi! Click on the voice recorder to interact with me.")
 
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
     recorded_audio = audio_recorder()
-    
+
     # Check if recording is done and available
     if recorded_audio:
         openai.api_key = settings.OPENAI_API_KEY
@@ -107,7 +126,14 @@ def main():
         transcribed_text = transcribe_audio(audio_question_file)
         st.write(transcribed_text)
 
-        ai_response = get_ai_response(transcribed_text)
+        st.session_state.chat_history.append(HumanMessage(content=transcribed_text))
+
+        ai_response = get_ai_response(transcribed_text, st.session_state.chat_history)
+        
+        st.session_state.chat_history.append(AIMessage(content=ai_response))
+        
+        print(st.session_state.chat_history)
+
         response_audio_file = settings.AUDIO_PATH+"audio_response.mp3"
         text_to_audio(openai, ai_response, response_audio_file)
         play_ai_response(response_audio_file)
