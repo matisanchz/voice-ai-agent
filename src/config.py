@@ -15,6 +15,6 @@ class Settings(BaseSettings):
     TEMPERATURE: int = 0
 
     AUDIO_PATH: Optional[str] = f"{root}\\audio\\"
-    CHAT_PATH: Optional[str] = f"{root}\\chat\\"
+    CHROMA_DB_PATH: Optional[str] = f"{root}\\chroma\\"
 
 settings = Settings()

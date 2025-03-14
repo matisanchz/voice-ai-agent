@@ -60,10 +60,15 @@ def get_documents_from_web(url):
 def create_db(docs):
     embedding = OpenAIEmbeddings()
 
-    persist_directory = settings.CHAT_PATH+"chat.json"
+    vectorStore = Chroma.from_documents(docs, embedding = embedding, persist_directory=settings.CHROMA_DB_PATH)
 
-    vectorStore = Chroma.from_documents(docs, embedding = embedding, persist_directory=persist_directory)
+    return vectorStore
 
+def load_db():
+    embedding = OpenAIEmbeddings()
+
+    vectorStore = Chroma(persist_directory=settings.CHROMA_DB_PATH, embedding_function=embedding)
+    
     return vectorStore
 
 def create_chain(vectorStore):
@@ -102,10 +107,7 @@ def create_chain(vectorStore):
     return retrieval_chain
 
 def retrieval_chain(input_text, chat_history):
-    if not os.path.exists(settings.CHAT_PATH):
-        os.makedirs(settings.CHAT_PATH)
-    docs = get_documents_from_web('https://atomchat.io/acerca-de-nosotros/')
-    vectorStore = create_db(docs)
+
     chain = create_chain(vectorStore)
     
     return chain.invoke({
@@ -113,7 +115,7 @@ def retrieval_chain(input_text, chat_history):
         "chat_history": chat_history
     })
 
-def main():
+def main(vectorStore):
     st.title("Atom Voice Agent")
     st.write("Hi! Click on the voice recorder to interact with me.")
 
@@ -151,4 +153,13 @@ def main():
         st.write(ai_response)
 
 if __name__ == "__main__":
-    main()
+    if not os.path.exists(settings.CHROMA_DB_PATH):
+        os.makedirs(settings.CHROMA_DB_PATH)
+        docs = get_documents_from_web('https://atomchat.io/acerca-de-nosotros/')
+        vectorStore = create_db(docs)
+        print("ChromaDB created")
+    else:
+        vectorStore = load_db()
+        print("ChromaDB loaded")
+
+    main(vectorStore)

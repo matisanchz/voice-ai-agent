@@ -176,5 +176,5 @@ cython_debug/
 # Audio recordings
 audio
 
-#Chat history
-chat
+#Chroma
+chroma
