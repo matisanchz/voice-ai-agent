@@ -3,4 +3,6 @@ audio_recorder_streamlit
 openai
 langchain
 langchain-openai
+langchain_community
 python-dotenv
+bs4
