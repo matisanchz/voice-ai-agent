@@ -174,5 +174,7 @@ cython_debug/
 .pypirc
 
 # Audio recordings
-audio/audio_question.mp3
-audio/audio_response.mp3
+audio
+
+#Chroma
+chroma

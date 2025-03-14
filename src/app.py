@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 from langchain_openai import ChatOpenAI
@@ -58,7 +59,16 @@ def get_documents_from_web(url):
 
 def create_db(docs):
     embedding = OpenAIEmbeddings()
-    vectorStore = Chroma.from_documents(docs, embedding = embedding)
+
+    vectorStore = Chroma.from_documents(docs, embedding = embedding, persist_directory=settings.CHROMA_DB_PATH)
+
+    return vectorStore
+
+def load_db():
+    embedding = OpenAIEmbeddings()
+
+    vectorStore = Chroma(persist_directory=settings.CHROMA_DB_PATH, embedding_function=embedding)
+    
     return vectorStore
 
 def create_chain(vectorStore):
@@ -97,8 +107,7 @@ def create_chain(vectorStore):
     return retrieval_chain
 
 def retrieval_chain(input_text, chat_history):
-    docs = get_documents_from_web('https://atomchat.io/acerca-de-nosotros/')
-    vectorStore = create_db(docs)
+
     chain = create_chain(vectorStore)
     
     return chain.invoke({
@@ -106,7 +115,7 @@ def retrieval_chain(input_text, chat_history):
         "chat_history": chat_history
     })
 
-def main():
+def main(vectorStore):
     st.title("Atom Voice Agent")
     st.write("Hi! Click on the voice recorder to interact with me.")
 
@@ -118,6 +127,10 @@ def main():
     # Check if recording is done and available
     if recorded_audio:
         openai.api_key = settings.OPENAI_API_KEY
+
+        if not os.path.exists(settings.AUDIO_PATH):
+            os.makedirs(settings.AUDIO_PATH)
+
         audio_question_file = settings.AUDIO_PATH+"audio_question.mp3"
 
         with open(audio_question_file, "wb") as f:
@@ -140,4 +153,13 @@ def main():
         st.write(ai_response)
 
 if __name__ == "__main__":
-    main()
+    if not os.path.exists(settings.CHROMA_DB_PATH):
+        os.makedirs(settings.CHROMA_DB_PATH)
+        docs = get_documents_from_web('https://atomchat.io/acerca-de-nosotros/')
+        vectorStore = create_db(docs)
+        print("ChromaDB created")
+    else:
+        vectorStore = load_db()
+        print("ChromaDB loaded")
+
+    main(vectorStore)
