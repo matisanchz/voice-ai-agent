@@ -11,18 +11,16 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.prompts import MessagesPlaceholder
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
-
 from langchain.chains import create_retrieval_chain
 
 from config import settings
 from utils import play_audio, save_audio, text_to_audio, audio_to_text
+from html_templates import css, get_bot_template, get_user_template
 import openai
 import base64
 
 audio_question_file = "audio_question.mp3"
 audio_response_file = "audio_response.mp3"
-
-print("ENTRADA")
 
 llm_gpt = ChatOpenAI(model=settings.OPENAI_LLM_MODEL, temperature=settings.TEMPERATURE)
 
@@ -31,8 +29,6 @@ def get_ai_response(input_text, chat_history):
     #response = llm_gpt([HumanMessage(content=input_text)])
 
     response = retrieval_chain(input_text, chat_history)
-
-    print(response["answer"])
 
     return response["answer"]
 
@@ -105,40 +101,63 @@ def retrieval_chain(input_text, chat_history):
         "chat_history": chat_history
     })
 
-def main(vectorStore):
+def main():
+
     st.title("Atom Voice Agent")
-    st.write("Hi! Click on the voice recorder to interact with me.")
+
+    st.write(css, unsafe_allow_html=True)
+
+    chat_container = st.container()
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    
+    input_container = st.container(border=True)
 
-    recorded_audio = audio_recorder()
+    with input_container:
+        user_input = st.chat_input("Type your message here", key="user_input")
+        recorded_audio = audio_recorder(text="Click to record", icon_size="2x")
 
-    # Check if recording is done and available
+    with chat_container:
+        for message in st.session_state.chat_history:
+            if isinstance(message, HumanMessage):
+                st.write(get_user_template(message.content, message.type), unsafe_allow_html=True)
+            else:
+                st.write(get_bot_template(message.content, message.type), unsafe_allow_html=True)
+
+    if user_input:
+        recorded_audio = None
+    else:
+        user_input = None
+
     if recorded_audio:
-        openai.api_key = settings.OPENAI_API_KEY
+        if openai.api_key != None:
+            openai.api_key = settings.OPENAI_API_KEY
 
         save_audio(recorded_audio, audio_question_file)
 
-        transcribed_text = audio_to_text(audio_question_file)
+        user_input = audio_to_text(audio_question_file)
 
-        st.write(transcribed_text)
 
-        st.session_state.chat_history.append(HumanMessage(content=transcribed_text))
+    if user_input:
 
-        ai_response = get_ai_response(transcribed_text, st.session_state.chat_history)
-        
+        with chat_container:
+            st.write(get_user_template(user_input, "human"), unsafe_allow_html=True)
+
+        st.session_state.chat_history.append(HumanMessage(content=user_input))
+
+        ai_response = get_ai_response(user_input, st.session_state.chat_history)
+
+        with chat_container:
+            st.write(get_user_template(ai_response, "ai"), unsafe_allow_html=True)
+
         st.session_state.chat_history.append(AIMessage(content=ai_response))
-        
-        print(st.session_state.chat_history)
 
         audio_response = text_to_audio(ai_response)
 
         save_audio(audio_response, audio_response_file)
 
         play_audio(audio_response_file)
-
-        st.write(ai_response)
 
 if __name__ == "__main__":
     if not os.path.exists(settings.CHROMA_DB_PATH):
@@ -150,4 +169,4 @@ if __name__ == "__main__":
         vectorStore = load_db()
         print("ChromaDB loaded")
 
-    main(vectorStore)
+    main()

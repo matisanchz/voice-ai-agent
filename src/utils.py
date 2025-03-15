@@ -3,6 +3,7 @@ import os
 from config import settings
 import base64
 import streamlit as st
+from html_templates import get_audio_template
 
 audio_path = settings.AUDIO_PATH
 
@@ -26,5 +27,4 @@ def play_audio(file_name):
     with open(audio_path+file_name, "rb") as audio_file:
         audio_bytes = audio_file.read()
     base64_audio=base64.b64encode(audio_bytes).decode("utf-8")
-    audio_html=f'<audio src="data:audio/mp3;base64,{base64_audio}" controls autoplay>'
-    st.markdown(audio_html, unsafe_allow_html=True)
+    st.markdown(get_audio_template(base64_audio), unsafe_allow_html=True)
