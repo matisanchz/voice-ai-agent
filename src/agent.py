@@ -9,9 +9,19 @@ from langchain.tools.retriever import create_retriever_tool
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.memory import ConversationBufferMemory
 from langchain_chroma import Chroma
+from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
+
 
 load_dotenv()
+
+history = UpstashRedisChatMessageHistory(
+    url=os.getenv("UPSTASH_REDIS_REST_URL"),
+    token=os.getenv("UPSTASH_REDIS_REST_TOKEN"),
+    session_id="chat1",
+    ttl=0
+)
 
 # Retriever
 def get_documents_from_web(url):
@@ -48,6 +58,12 @@ prompt = ChatPromptTemplate.from_messages([
     MessagesPlaceholder(variable_name="agent_scratchpad")
 ])
 
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    return_messages=True,
+    chat_memory=history
+)
+
 def get_vectorstore():
     if not os.path.exists(settings.CHROMA_DB_PATH):
         os.makedirs(settings.CHROMA_DB_PATH)
@@ -81,14 +97,14 @@ agent = create_openai_functions_agent(
 
 agentExecutor = AgentExecutor(
     agent = agent,
+    memory=memory,
     tools = tools
 )
 
-def process_chat(user_input, chat_history):
+def process_chat(user_input):
 
     response = agentExecutor.invoke({
-        "input": user_input,
-        "chat_history": chat_history
+        "input": user_input
     })
 
     return response["output"]

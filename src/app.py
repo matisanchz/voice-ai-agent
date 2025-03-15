@@ -56,7 +56,7 @@ def main():
 
         st.session_state.chat_history.append(HumanMessage(content=user_input))
 
-        ai_response = process_chat(user_input, st.session_state.chat_history)
+        ai_response = process_chat(user_input)
 
         with chat_container:
             st.write(get_user_template(ai_response, "ai"), unsafe_allow_html=True)
