@@ -61,8 +61,16 @@ prompt = ChatPromptTemplate.from_messages([
 memory = ConversationBufferMemory(
     memory_key="chat_history",
     return_messages=True,
-    chat_memory=history
+    chat_memory=history,
+    key="history"
 )
+
+def get_chat_memory():
+    memory_variables = memory.load_memory_variables({})
+    
+    chat_history = memory_variables.get("chat_history", [])
+    
+    return chat_history
 
 def get_vectorstore():
     if not os.path.exists(settings.CHROMA_DB_PATH):

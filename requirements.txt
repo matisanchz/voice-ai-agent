@@ -5,5 +5,6 @@ langchain
 langchain-openai
 langchain_community
 langchain_chroma
+upstash_redis
 python-dotenv
 bs4
