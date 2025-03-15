@@ -13,8 +13,6 @@ import openai
 audio_question_file = "audio_question.mp3"
 audio_response_file = "audio_response.mp3"
 
-model = ChatOpenAI(model=settings.OPENAI_LLM_MODEL, temperature=settings.TEMPERATURE)
-
 def main():
 
     st.title("Atom Voice Agent")
