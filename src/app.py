@@ -15,15 +15,16 @@ from langchain.chains.history_aware_retriever import create_history_aware_retrie
 from langchain.chains import create_retrieval_chain
 
 from config import settings
+from utils import play_audio, save_audio, text_to_audio, audio_to_text
 import openai
 import base64
 
-llm_gpt = ChatOpenAI(model=settings.OPENAI_LLM_MODEL, temperature=settings.TEMPERATURE)
+audio_question_file = "audio_question.mp3"
+audio_response_file = "audio_response.mp3"
 
-def transcribe_audio(audio_path):
-    with open(audio_path, "rb") as audio_file:
-        transcript = openai.audio.transcriptions.create(model="whisper-1", file=audio_file)
-        return transcript.text
+print("ENTRADA")
+
+llm_gpt = ChatOpenAI(model=settings.OPENAI_LLM_MODEL, temperature=settings.TEMPERATURE)
 
 def get_ai_response(input_text, chat_history):
 
@@ -34,17 +35,6 @@ def get_ai_response(input_text, chat_history):
     print(response["answer"])
 
     return response["answer"]
-
-def text_to_audio(client, text, audio_path):
-    response = client.audio.speech.create(model="tts-1", voice="onyx", input=text)
-    response.stream_to_file(audio_path)
-
-def play_ai_response(audio_file):
-    with open(audio_file, "rb") as audio_file:
-        audio_bytes = audio_file.read()
-    base64_audio=base64.b64encode(audio_bytes).decode("utf-8")
-    audio_html=f'<audio src="data:audio/mp3;base64,{base64_audio}" controls autoplay>'
-    st.markdown(audio_html, unsafe_allow_html=True)
 
 def get_documents_from_web(url):
     loader = WebBaseLoader(url)
@@ -128,15 +118,10 @@ def main(vectorStore):
     if recorded_audio:
         openai.api_key = settings.OPENAI_API_KEY
 
-        if not os.path.exists(settings.AUDIO_PATH):
-            os.makedirs(settings.AUDIO_PATH)
+        save_audio(recorded_audio, audio_question_file)
 
-        audio_question_file = settings.AUDIO_PATH+"audio_question.mp3"
+        transcribed_text = audio_to_text(audio_question_file)
 
-        with open(audio_question_file, "wb") as f:
-            f.write(recorded_audio)
-
-        transcribed_text = transcribe_audio(audio_question_file)
         st.write(transcribed_text)
 
         st.session_state.chat_history.append(HumanMessage(content=transcribed_text))
@@ -147,9 +132,12 @@ def main(vectorStore):
         
         print(st.session_state.chat_history)
 
-        response_audio_file = settings.AUDIO_PATH+"audio_response.mp3"
-        text_to_audio(openai, ai_response, response_audio_file)
-        play_ai_response(response_audio_file)
+        audio_response = text_to_audio(ai_response)
+
+        save_audio(audio_response, audio_response_file)
+
+        play_audio(audio_response_file)
+
         st.write(ai_response)
 
 if __name__ == "__main__":
