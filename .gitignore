@@ -178,3 +178,6 @@ audio
 
 #Chroma
 chroma
+
+#Sql
+chatbot_db.sqlite

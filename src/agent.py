@@ -6,18 +6,19 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.tools.retriever import create_retriever_tool
+from langchain_community.tools import QuerySQLDatabaseTool
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
 
-from database import ChromaDataBase, RedisDataBase
+from database import ChromaDataBase, RedisDataBase, SQLDataBase
 from utils import get_timestamp
 
 load_dotenv()
 
 class AgentManager:
-    def __init__(self, session_key):
+    def __init__(self, session_key, user):
         self.session_key = session_key
         self.model = None
         self.history = None
@@ -25,9 +26,12 @@ class AgentManager:
         self.agent = None
         self.agent_executor = None
 
-        self.init_model()
+        self.init_model(user)
 
-    def init_model(self):
+    def init_model(self, user):
+
+        name, _ , company, country, budget = user
+
         self.model = ChatOpenAI(
             model=settings.OPENAI_LLM_MODEL, 
             temperature=settings.TEMPERATURE
@@ -41,7 +45,7 @@ class AgentManager:
         )
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an AtomChat voice assistant, capable to answer and guide leads. Answer the user's questions based on the chat history."),
+            ("system", f"You are an AtomChat voice assistant, capable to answer and guide leads. Answer the user's questions based on the chat history and your databse. In t his case, you are going to talk with {name}, which belongs to the company named {company} from the Country of {country}. Their budget is {budget}."),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
@@ -55,18 +59,19 @@ class AgentManager:
         )
 
         chroma = ChromaDataBase()
-
         retriever = chroma.get_retriever()
 
         search = TavilySearchResults()
-
         retriever_tool = create_retriever_tool(
             retriever,
             "atomchat_web",
             "Use this tool when searching for information abour 'Atomchat.io'."
         )
-        
-        tools = [search, retriever_tool]
+
+        self.sql_db = SQLDataBase()
+        sql_tool = QuerySQLDatabaseTool(db=self.sql_db.db)
+
+        tools = [search, retriever_tool, sql_tool]
 
         self.agent = create_openai_functions_agent(
             llm=self.model,

@@ -1,6 +1,6 @@
+import base64
 import os
 from config import settings
-
 
 css = '''
 <style>
@@ -32,18 +32,18 @@ def get_bot_template(message, type):
     bot_template = f'''
     <div class="chat-msg bot">
         <div class="avatar">
-            <img src="{type+".png"}" alt="bot" style="max-height: 78px; max-width: 78px; border-radius: 50%; object-fit: cover;">
+            <img src="https://1951880946.rsc.cdn77.org/resize?type=auto&width=256&url=https://reservio-static-production.s3.eu-central-1.amazonaws.com/businesses/dff0e0cf-9def-422a-887b-f6b8dccca351.png" alt="bot" style="max-height: 78px; max-width: 78px; border-radius: 50%; object-fit: cover;">
         </div>
         <div class="msg">{message}</div>
     </div>
     '''
     return bot_template
 
-def get_user_template(message, type):
+def get_user_template(message, type, user_id):
     user_template = f'''
     <div class="chat-msg user">
         <div class="avatar">
-            <img src="{type+".png"}" alt="user" /></a>
+            <img src="{settings.FLATICON_REPO+str(user_id)+".png"}" alt="user" /></a>
         </div>    
         <div class="msg">{message}</div>
     </div>
