@@ -61,3 +61,19 @@ def get_audio_template(base64_audio):
         }}
     </style>
     '''
+
+def get_form_template():
+    return f'''
+    <form action="/submit" method="post">
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <label for="company">Company:</label><br>
+        <input type="text" id="company" name="company" required><br><br>
+
+        <label for="forecasting">Estimated Forecasting (in dollars):</label><br>
+        <input type="number" id="forecasting" name="forecasting" step="0.01" required><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+    '''
