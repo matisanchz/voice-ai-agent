@@ -8,7 +8,7 @@ from agent import AgentManager
 
 from config import settings
 from database import RedisDataBase, SQLDataBase
-from utils import play_audio, save_audio, text_to_audio, audio_to_text
+from utils import get_countries, play_audio, save_audio, text_to_audio, audio_to_text
 from html_templates import css, get_bot_template, get_user_template
 import openai
 
@@ -38,16 +38,18 @@ def main():
                 for i in range(1, 25)
             }
 
-            avatar_choice = st.selectbox("Select an image:", list(images.keys()))
+            col1, col2, col3 = st.columns([2, 1, 2])
 
-            st.image(images[avatar_choice]["url"], caption=avatar_choice, width=100)
+            with col2:
+                avatar_choice = st.selectbox("Select an Avatar:", list(images.keys()))
+                st.image(images[avatar_choice]["url"], caption=avatar_choice, width=100)
 
             model = None
 
             with st.form(key="user_form"):
                 name = st.text_input("Enter your name")
                 company = st.text_input("Enter your company")
-                country = st.text_input("Enter your country")
+                country = st.selectbox("Select a Country:", get_countries())
                 budget = st.number_input("Estimated Budget (in dollars)", min_value=10, step=10)
 
                 all_filled = name and company and budget > 0
