@@ -71,6 +71,9 @@ def get_form_template():
         <label for="company">Company:</label><br>
         <input type="text" id="company" name="company" required><br><br>
 
+        <label for="country">Country:</label><br>
+        <input type="text" id="country" name="country" required><br><br>
+
         <label for="forecasting">Estimated Forecasting (in dollars):</label><br>
         <input type="number" id="forecasting" name="forecasting" step="0.01" required><br><br>
 
