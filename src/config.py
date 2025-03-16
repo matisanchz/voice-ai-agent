@@ -18,4 +18,6 @@ class Settings(BaseSettings):
     CHROMA_DB_PATH: Optional[str] = f"{root}\\chroma\\"
     IMAGE_PATH: Optional[str] = f"images/"
 
+    SESSION_ID_KEY_TEMPLATE: Optional[str] = "_SESSION_"
+
 settings = Settings()

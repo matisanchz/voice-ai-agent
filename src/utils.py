@@ -4,6 +4,7 @@ from config import settings
 import base64
 import streamlit as st
 from html_templates import get_audio_template
+from datetime import datetime
 
 audio_path = settings.AUDIO_PATH
 
@@ -28,3 +29,6 @@ def play_audio(file_name):
         audio_bytes = audio_file.read()
     base64_audio=base64.b64encode(audio_bytes).decode("utf-8")
     st.markdown(get_audio_template(base64_audio), unsafe_allow_html=True)
+
+def get_timestamp():
+    return datetime.now().strftime("%Y_%m_%d_%H_%M_%S")

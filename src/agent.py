@@ -2,93 +2,95 @@ import os
 from config import settings
 from dotenv import load_dotenv
 
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.tools.retriever import create_retriever_tool
 from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
+
+from langchain.memory import ConversationBufferMemory
+from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
+
+from database import ChromaDataBase, RedisDataBase
+from utils import get_timestamp
 
 load_dotenv()
 
-# Retriever
-def get_documents_from_web(url):
-    loader = WebBaseLoader(url)
-    docs = loader.load()
+class AgentManager:
+    def __init__(self, session_key):
+        self.session_key = session_key
+        self.model = None
+        self.history = None
+        self.memory = None
+        self.agent = None
+        self.agent_executor = None
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size = 100,
-        chunk_overlap = 20
-    )
-    splitDocs = splitter.split_documents(docs)
-    return splitDocs
+        self.init_model()
 
-def create_db(docs):
-    embedding = OpenAIEmbeddings()
+    def init_model(self):
+        self.model = ChatOpenAI(
+            model=settings.OPENAI_LLM_MODEL, 
+            temperature=settings.TEMPERATURE
+        )
 
-    vectorStore = Chroma.from_documents(docs, embedding = embedding, persist_directory=settings.CHROMA_DB_PATH)
+        self.history = UpstashRedisChatMessageHistory(
+            url=os.getenv("UPSTASH_REDIS_REST_URL"),
+            token=os.getenv("UPSTASH_REDIS_REST_TOKEN"),
+            session_id = self.session_key,
+            ttl=0
+        )
 
-    return vectorStore
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an AtomChat voice assistant, capable to answer and guide leads. Answer the user's questions based on the chat history."),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad")
+            ])
 
-def load_db():
-    embedding = OpenAIEmbeddings()
+        self.memory = ConversationBufferMemory(
+            memory_key="chat_history",
+            return_messages=True,
+            chat_memory=self.history,
+            key="history"
+        )
 
-    vectorStore = Chroma(persist_directory=settings.CHROMA_DB_PATH, embedding_function=embedding)
-    
-    return vectorStore
+        chroma = ChromaDataBase()
 
-model = ChatOpenAI(model=settings.OPENAI_LLM_MODEL, temperature=settings.TEMPERATURE)
+        retriever = chroma.get_retriever()
 
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an AtomChai voice assistant, capable to answer and guide leads. Answer the user's questions based on the chat history."),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{input}"),
-    MessagesPlaceholder(variable_name="agent_scratchpad")
-])
+        search = TavilySearchResults()
 
-def get_vectorstore():
-    if not os.path.exists(settings.CHROMA_DB_PATH):
-        os.makedirs(settings.CHROMA_DB_PATH)
-        docs = get_documents_from_web('https://atomchat.io/acerca-de-nosotros/')
-        print("ChromaDB created")
-        return create_db(docs)
-    else:
-        print("ChromaDB loaded")
-        return load_db()
+        retriever_tool = create_retriever_tool(
+            retriever,
+            "atomchat_web",
+            "Use this tool when searching for information abour 'Atomchat.io'."
+        )
+        
+        tools = [search, retriever_tool]
 
-def get_retriever():
-    vectorStore = get_vectorstore()
-    return vectorStore.as_retriever(search_kwargs={"k":2})
-    
+        self.agent = create_openai_functions_agent(
+            llm=self.model,
+            prompt=prompt,
+            tools=tools
+        )
 
-retriever = get_retriever()
+        self.agentExecutor = AgentExecutor(
+            agent = self.agent,
+            memory=self.memory,
+            tools = tools
+        )
 
-search = TavilySearchResults()
-retriever_tool = create_retriever_tool(
-    retriever,
-    "atomchat_web",
-    "Use this tool when searching for information abour 'Atomchat.io'."
-)
-tools = [search, retriever_tool]
+    def get_chat_memory(self):
+        memory_variables = self.memory.load_memory_variables({})
+        
+        chat_history = memory_variables.get("chat_history", [])
+        
+        return chat_history
+        
+    def process_chat(self, user_input):
 
-agent = create_openai_functions_agent(
-    llm=model,
-    prompt=prompt,
-    tools=tools
-)
+        response = self.agentExecutor.invoke({
+            "input": user_input
+        })
 
-agentExecutor = AgentExecutor(
-    agent = agent,
-    tools = tools
-)
-
-def process_chat(user_input, chat_history):
-
-    response = agentExecutor.invoke({
-        "input": user_input,
-        "chat_history": chat_history
-    })
-
-    return response["output"]
+        return response["output"]
