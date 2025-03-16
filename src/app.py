@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from langchain.memory import StreamlitChatMessageHistory
 
-from agent import get_chat_memory, process_chat
+from agent import get_chat_memory, get_last_session_id, increment_session_id, process_chat
 from chat_session import get_chat_sessions
 from config import settings
 from utils import play_audio, save_audio, text_to_audio, audio_to_text
@@ -27,7 +27,7 @@ def main():
         with st.form(key="user_form"):
             name = st.text_input("Enter your name")
             company = st.text_input("Enter your company")
-            forecasting = st.number_input("Estimated Forecasting (in dollars)", min_value=0.0, step=0.01)
+            forecasting = st.number_input("Estimated Forecasting (in dollars)", min_value=10, step=10)
 
             all_filled = name and company and forecasting > 0
 
@@ -45,12 +45,21 @@ def main():
         st.write(f"Company: {st.session_state.company}")
         st.write(f"Estimated Forecasting: {st.session_state.forecasting}")
 
+        session_id = get_last_session_id() + 1
+
+        print(session_id)
+
+        st.session_state.session_id = session_id
+
+        increment_session_id(session_id)
+
         time.sleep(5)
 
         st.rerun()
 
     elif submit_button:
         st.write("You have to fill all inputs.")
+        # //TODO Add form validators
 
     if "form" in st.session_state:
 

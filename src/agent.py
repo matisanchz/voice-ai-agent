@@ -16,10 +16,21 @@ from langchain_community.chat_message_histories.upstash_redis import UpstashRedi
 
 load_dotenv()
 
+def get_last_session_id():
+    last_session_id = history.redis_client.get("last_session_id")
+    
+    if last_session_id:
+        return int(last_session_id)
+    else:
+        return 0
+
+def increment_session_id(new_session_id):
+    history.redis_client.set("last_session_id", new_session_id)
+
 history = UpstashRedisChatMessageHistory(
     url=os.getenv("UPSTASH_REDIS_REST_URL"),
     token=os.getenv("UPSTASH_REDIS_REST_TOKEN"),
-    session_id="chat1",
+    session_id="1",
     ttl=0
 )
 
