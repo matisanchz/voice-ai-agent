@@ -1,5 +1,6 @@
 
 import os
+import sqlite3
 from dotenv import load_dotenv
 from config import settings
 from langchain_community.document_loaders import WebBaseLoader
@@ -7,7 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
-
+from langchain_community.utilities import SQLDatabase
 from utils import get_timestamp
 
 load_dotenv()
@@ -92,3 +93,51 @@ class RedisDataBase():
     def get_sessions(self):
         sessions = self.history.redis_client.lrange("list_sessions", 0, -1)
         return sessions[::-1]
+
+class SQLDataBase():
+    def __init__(self):
+        self.conn = sqlite3.connect("chatbot_db.sqlite")
+        self.db = SQLDatabase.from_uri("sqlite:///chatbot_db.sqlite")
+
+        self.create_user_table()
+    
+    def create_user_table(self):
+        cursor = self.conn.cursor()
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                avatar INT,
+                company TEXT,
+                country TEXT,
+                budget FLOAT
+            )
+        ''')
+
+        self.conn.commit()
+
+    def insert_user(self, id, name, avatar, company, country, budget):
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO user (id, name, avatar, company, country, budget) VALUES (?, ?, ?, ?, ?, ?)", (id, name, avatar, company, country, budget))
+        self.conn.commit()
+
+    def delete_user(self, id):
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM user WHERE id = ?", (id))
+        self.conn.commit()
+
+    def get_users(self):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM user")
+        rows = cursor.fetchall()
+
+        return rows
+    
+    def get_user_by_id(self, id):
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT name, avatar, company, country, budget FROM user WHERE id = ?", (id))
+        row = cursor.fetchone()
+        return row
+
+    

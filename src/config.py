@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     AUDIO_PATH: Optional[str] = f"{root}\\audio\\"
     CHROMA_DB_PATH: Optional[str] = f"{root}\\chroma\\"
     FLATICON_REPO: Optional[str] = "https://cdn-icons-png.flaticon.com/512/219/"
+    FLATICON_REPO_NUM: int = 219953
 
     SESSION_ID_KEY_TEMPLATE: Optional[str] = "_SESSION_"
 

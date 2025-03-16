@@ -1,6 +1,6 @@
 streamlit
 audio_recorder_streamlit
-streamlit_carousel
+sqlite-3
 openai
 langchain
 langchain-openai

@@ -2,13 +2,12 @@ import os
 import time
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
-from langchain.schema import HumanMessage, SystemMessage, AIMessage
-from streamlit_carousel import carousel
+from langchain.schema import HumanMessage
 
 from agent import AgentManager
 
 from config import settings
-from database import RedisDataBase
+from database import RedisDataBase, SQLDataBase
 from utils import play_audio, save_audio, text_to_audio, audio_to_text
 from html_templates import css, get_bot_template, get_user_template
 import openai
@@ -30,8 +29,8 @@ def main():
 
             images = {
                 f"Avatar {i}": {
-                    "id": 219953 + i,  # Unique ID
-                    "url": settings.FLATICON_REPO + f"{219953 + i}.png"
+                    "id": settings.FLATICON_REPO_NUM + i,
+                    "url": settings.FLATICON_REPO + f"{settings.FLATICON_REPO_NUM + i}.png"
                 }
                 for i in range(1, 25)
             }
@@ -46,43 +45,54 @@ def main():
                 name = st.text_input("Enter your name")
                 company = st.text_input("Enter your company")
                 country = st.text_input("Enter your country")
-                forecasting = st.number_input("Estimated Forecasting (in dollars)", min_value=10, step=10)
+                budget = st.number_input("Estimated Budget (in dollars)", min_value=10, step=10)
 
-                all_filled = name and company and forecasting > 0
+                all_filled = name and company and budget > 0
 
                 submit_button = st.form_submit_button(label="Submit")
     else:
-        if "avatar" in st.session_state:
-            if "session_selected" in st.session_state:
-                model = AgentManager(st.session_state.session_selected)
-                st.session_state.model = model
-            else:
-                model = st.session_state.model
+        if "session_selected" in st.session_state and (st.session_state.session_selected != st.session_state.session_key):
+            user = SQLDataBase().get_user_by_id((st.session_state.session_selected.split('_'))[-1])
+            st.session_state.name, st.session_state.avatar_id, st.session_state.company, st.session_state.country, st.session_state.budget = user
+            model = AgentManager(st.session_state.session_selected, user)
+            st.session_state.model = model
+            st.session_state.session_key = st.session_state.session_selected
+            st.rerun()
+        else:
+            model = st.session_state.model
 
     if submit_button:
         if all_filled:
             if name:
                 if validate_name(name) == "1":
                     st.session_state.name = name
+                    st.session_state.avatar_id = images[avatar_choice]["id"]
                     st.session_state.company = company
                     st.session_state.country = country
-                    st.session_state.forecasting = forecasting
+                    st.session_state.budget = budget
                     st.session_state.form = "submitted"
-                    st.session_state.avatar_id = images[avatar_choice]["id"]
 
-                    # Show confirmation that values were saved
+                    user = [name, images[avatar_choice]["id"], company, country, budget]
+
                     st.write("Form Submitted Successfully!")
                     st.write(f"Name: {st.session_state.name}")
                     st.write(f"Company: {st.session_state.company}")
-                    st.write(f"Estimated Forecasting: {st.session_state.forecasting}")
-                    
-                    chatSessionManager = RedisDataBase()
+                    st.write(f"Estimated Budget: {st.session_state.budget}")
 
-                    session_key = chatSessionManager.create_session()
+                    redis_db = RedisDataBase()
+
+                    session_key = redis_db.create_session()
+
+                    session_num = (session_key.split('_'))[-1]
 
                     st.session_state.session_key = session_key
 
-                    model = AgentManager(session_key)
+                    sql_db = SQLDataBase()
+
+                    sql_db.insert_user(session_num, st.session_state.name, st.session_state.avatar_id, st.session_state.company,
+                        st.session_state.country, st.session_state.budget)
+
+                    model = AgentManager(session_key, user)
 
                     st.session_state.model = model
 
