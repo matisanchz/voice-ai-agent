@@ -3,6 +3,7 @@ import time
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
+from streamlit_carousel import carousel
 
 from agent import AgentManager
 
@@ -25,25 +26,38 @@ def main():
 
     if "session_key" not in st.session_state:
 
-        model = None
+        with st.container(border=True, key="avatar_container"):
 
-        with st.form(key="user_form"):
-            name = st.text_input("Enter your name")
-            company = st.text_input("Enter your company")
-            country = st.text_input("Enter your country")
-            forecasting = st.number_input("Estimated Forecasting (in dollars)", min_value=10, step=10)
+            images = {
+                f"Avatar {i}": {
+                    "id": 219953 + i,  # Unique ID
+                    "url": settings.FLATICON_REPO + f"{219953 + i}.png"
+                }
+                for i in range(1, 25)
+            }
 
-            all_filled = name and company and forecasting > 0
+            avatar_choice = st.selectbox("Select an image:", list(images.keys()))
 
-            submit_button = st.form_submit_button(label="Submit")
+            st.image(images[avatar_choice]["url"], caption=avatar_choice, width=100)
+
+            model = None
+
+            with st.form(key="user_form"):
+                name = st.text_input("Enter your name")
+                company = st.text_input("Enter your company")
+                country = st.text_input("Enter your country")
+                forecasting = st.number_input("Estimated Forecasting (in dollars)", min_value=10, step=10)
+
+                all_filled = name and company and forecasting > 0
+
+                submit_button = st.form_submit_button(label="Submit")
     else:
-        if "session_selected" in st.session_state:
-            print(st.session_state.session_key)
-            print(st.session_state.session_selected)
-            model = AgentManager(st.session_state.session_selected)
-            st.session_state.model = model
-        else:
-            model = st.session_state.model
+        if "avatar" in st.session_state:
+            if "session_selected" in st.session_state:
+                model = AgentManager(st.session_state.session_selected)
+                st.session_state.model = model
+            else:
+                model = st.session_state.model
 
     if submit_button:
         if all_filled:
@@ -54,6 +68,7 @@ def main():
                     st.session_state.country = country
                     st.session_state.forecasting = forecasting
                     st.session_state.form = "submitted"
+                    st.session_state.avatar_id = images[avatar_choice]["id"]
 
                     # Show confirmation that values were saved
                     st.write("Form Submitted Successfully!")
@@ -87,7 +102,7 @@ def main():
 
         chat_sessions = redis_db.get_sessions()
 
-        session_selected = st.sidebar.selectbox("Select a chat session", chat_sessions, key="session_selected")
+        st.sidebar.selectbox("Select a chat session", chat_sessions, key="session_selected")
 
         st.write(css, unsafe_allow_html=True)
 
@@ -105,7 +120,7 @@ def main():
             with chat_container:
                 for message in chat_memory:
                     if isinstance(message, HumanMessage):
-                        st.write(get_user_template(message.content, message.type), unsafe_allow_html=True)
+                        st.write(get_user_template(message.content, message.type, st.session_state.avatar_id), unsafe_allow_html=True)
                     else:
                         st.write(get_bot_template(message.content, message.type), unsafe_allow_html=True)
 
@@ -124,12 +139,12 @@ def main():
         if user_input:
             
             with chat_container:
-                st.write(get_user_template(user_input, "human"), unsafe_allow_html=True)
+                st.write(get_user_template(user_input, "human", st.session_state.avatar_id), unsafe_allow_html=True)
             
             ai_response = model.process_chat(user_input)
             
             with chat_container:
-                st.write(get_user_template(ai_response, "ai"), unsafe_allow_html=True)
+                st.write(get_bot_template(ai_response, "ai"), unsafe_allow_html=True)
             
             audio_response = text_to_audio(ai_response)
 
