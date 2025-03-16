@@ -6,12 +6,13 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.tools.retriever import create_retriever_tool
+from langchain_community.tools import QuerySQLDatabaseTool
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
 
-from database import ChromaDataBase, RedisDataBase
+from database import ChromaDataBase, RedisDataBase, SQLDataBase
 from utils import get_timestamp
 
 load_dotenv()
@@ -58,18 +59,19 @@ class AgentManager:
         )
 
         chroma = ChromaDataBase()
-
         retriever = chroma.get_retriever()
 
         search = TavilySearchResults()
-
         retriever_tool = create_retriever_tool(
             retriever,
             "atomchat_web",
             "Use this tool when searching for information abour 'Atomchat.io'."
         )
-        
-        tools = [search, retriever_tool]
+
+        self.sql_db = SQLDataBase()
+        sql_tool = QuerySQLDatabaseTool(db=self.sql_db.db)
+
+        tools = [search, retriever_tool, sql_tool]
 
         self.agent = create_openai_functions_agent(
             llm=self.model,

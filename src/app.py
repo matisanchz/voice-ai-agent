@@ -17,6 +17,9 @@ from validator import validate_name
 audio_question_file = "audio_question.mp3"
 audio_response_file = "audio_response.mp3"
 
+def clean_variable_sesion():
+    st.session_state.clear()
+
 def main():
 
     st.title("Atom Voice Agent")
@@ -161,6 +164,27 @@ def main():
             save_audio(audio_response, audio_response_file)
 
             play_audio(audio_response_file)
+        
+        with st.container(key="buttons"):
+            col1, col2 = st.columns(2)
+            with col1:
+                delete = st.button("Delete Chat")
+            with col2:
+                new = st.button("New session")
+        if delete:
+            session_key = st.session_state.session_key
+            sql_db = SQLDataBase()
+            redis_db = RedisDataBase()
+            clean_variable_sesion()
+            sql_db.delete_user((session_key.split('_'))[-1])
+            redis_db.delete_session(session_key)
+            redis_db.delete_chat(session_key)
+            time.sleep(4)
+            st.rerun()
+        if new:
+            clean_variable_sesion()
+            time.sleep(3)
+            st.rerun()
     else:
         st.write("Please fill in the form to start the chat.")
 

@@ -87,12 +87,18 @@ class RedisDataBase():
 
         return new_session_id
     
+    def delete_session(self, session_name):
+        self.history.redis_client.lrem("list_sessions", 0, session_name)
+    
     def save_session(self, session_name):
         self.history.redis_client.rpush("list_sessions", session_name)
 
     def get_sessions(self):
         sessions = self.history.redis_client.lrange("list_sessions", 0, -1)
         return sessions[::-1]
+    
+    def delete_chat(self, session_name):
+        self.history.redis_client.delete("message_store:"+session_name)
 
 class SQLDataBase():
     def __init__(self):
@@ -124,7 +130,7 @@ class SQLDataBase():
 
     def delete_user(self, id):
         cursor = self.conn.cursor()
-        cursor.execute("DELETE FROM user WHERE id = ?", (id))
+        cursor.execute("DELETE FROM user WHERE id = ?", (id,))
         self.conn.commit()
 
     def get_users(self):
@@ -136,7 +142,7 @@ class SQLDataBase():
     
     def get_user_by_id(self, id):
         cursor = self.conn.cursor()
-        cursor.execute("SELECT name, avatar, company, country, budget FROM user WHERE id = ?", (id))
+        cursor.execute("SELECT name, avatar, company, country, budget FROM user WHERE id = ?", (id,))
         row = cursor.fetchone()
         return row
 
