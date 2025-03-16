@@ -2,15 +2,14 @@ import os
 import time
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
-from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
-from langchain.memory import StreamlitChatMessageHistory
 
-from agent import get_chat_memory, get_last_session_id, increment_session_id, process_chat
-from chat_session import get_chat_sessions
+from agent import AgentManager
+
 from config import settings
+from database import RedisDataBase
 from utils import play_audio, save_audio, text_to_audio, audio_to_text
-from html_templates import css, get_bot_template, get_form_template, get_user_template
+from html_templates import css, get_bot_template, get_user_template
 import openai
 
 from validator import validate_name
@@ -24,7 +23,9 @@ def main():
 
     submit_button = None
 
-    if "form" not in st.session_state:
+    if "session_key" not in st.session_state:
+
+        model = None
 
         with st.form(key="user_form"):
             name = st.text_input("Enter your name")
@@ -35,50 +36,64 @@ def main():
             all_filled = name and company and forecasting > 0
 
             submit_button = st.form_submit_button(label="Submit")
+    else:
+        if "session_selected" in st.session_state:
+            print(st.session_state.session_key)
+            print(st.session_state.session_selected)
+            model = AgentManager(st.session_state.session_selected)
+            st.session_state.model = model
+        else:
+            model = st.session_state.model
 
     if submit_button:
-        print(validate_name(name))
         if all_filled:
-            st.session_state.name = name
-            st.session_state.company = company
-            st.session_state.country = country
-            st.session_state.forecasting = forecasting
-            st.session_state.form = "submitted"
+            if name:
+                if validate_name(name) == "1":
+                    st.session_state.name = name
+                    st.session_state.company = company
+                    st.session_state.country = country
+                    st.session_state.forecasting = forecasting
+                    st.session_state.form = "submitted"
 
-            # Show confirmation that values were saved
-            st.write("Form Submitted Successfully!")
-            st.write(f"Name: {st.session_state.name}")
-            st.write(f"Company: {st.session_state.company}")
-            st.write(f"Estimated Forecasting: {st.session_state.forecasting}")
+                    # Show confirmation that values were saved
+                    st.write("Form Submitted Successfully!")
+                    st.write(f"Name: {st.session_state.name}")
+                    st.write(f"Company: {st.session_state.company}")
+                    st.write(f"Estimated Forecasting: {st.session_state.forecasting}")
+                    
+                    chatSessionManager = RedisDataBase()
 
-            session_id = get_last_session_id() + 1
+                    session_key = chatSessionManager.create_session()
 
-            print(session_id)
+                    st.session_state.session_key = session_key
 
-            st.session_state.session_id = session_id
+                    model = AgentManager(session_key)
 
-            increment_session_id(session_id)
+                    st.session_state.model = model
 
-            time.sleep(5)
+                    time.sleep(3)
 
-            st.rerun()
+                    st.rerun()
+                else:
+                    st.write("You must use a real name. It is forbidden to use numbers or special characters.")
         else:
             st.write("You have to fill all inputs.")
-            # //TODO Add form validators
 
-    if "form" in st.session_state:
+    if "session_key" in st.session_state:
 
         st.sidebar.title("Chat Sessions")
 
-        chat_sessions = get_chat_sessions()
+        redis_db = RedisDataBase()
 
-        st.sidebar.selectbox("Select a chat session", chat_sessions, key="session_key")
+        chat_sessions = redis_db.get_sessions()
+
+        session_selected = st.sidebar.selectbox("Select a chat session", chat_sessions, key="session_selected")
 
         st.write(css, unsafe_allow_html=True)
 
         chat_container = st.container()
-        
-        chat_memory = get_chat_memory()
+
+        chat_memory = model.get_chat_memory()
         
         input_container = st.container(border=True)
 
@@ -111,7 +126,7 @@ def main():
             with chat_container:
                 st.write(get_user_template(user_input, "human"), unsafe_allow_html=True)
             
-            ai_response = process_chat(user_input)
+            ai_response = model.process_chat(user_input)
             
             with chat_container:
                 st.write(get_user_template(ai_response, "ai"), unsafe_allow_html=True)
@@ -122,9 +137,7 @@ def main():
 
             play_audio(audio_response_file)
     else:
-        # Show form content before submission
         st.write("Please fill in the form to start the chat.")
-    #save_chat_history()
 
 if __name__ == "__main__":
     main()

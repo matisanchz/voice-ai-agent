@@ -11,10 +11,9 @@ llm = ChatOpenAI(
 )
 
 def validate_name(name):
-    # Prompt Template
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", "You will recieve a name as an input. You must response with a 1 if it is a valid name, or a 0 if it an invalid name."),
+            ("system", "You will recieve a name as an input. You must response with a 1 if it is a valid name, or a 0 if it an invalid name. Please, consider that some names are from different countries. Take care of special characters and numbers."),
             ("human", "{input}")
         ]
     )

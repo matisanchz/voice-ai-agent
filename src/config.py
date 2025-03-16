@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     AUDIO_PATH: Optional[str] = f"{root}\\audio\\"
     CHROMA_DB_PATH: Optional[str] = f"{root}\\chroma\\"
-    CHAT_SESSIONS_PATH: Optional[str] = f"{root}\\chat_sessions\\"
     IMAGE_PATH: Optional[str] = f"images/"
+
+    SESSION_ID_KEY_TEMPLATE: Optional[str] = "_SESSION_"
 
 settings = Settings()
