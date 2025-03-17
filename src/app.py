@@ -36,7 +36,9 @@ def main():
         selected = st.sidebar.selectbox("Select a chat session", chat_sessions_with_placeholder, index=0, key="session_selected")
     
     if selected and selected != "Select an option...":
-        st.session_state.session_key = selected
+        if "session_key" not in st.session_state:
+            st.session_state.session_key = selected
+            print("Entro1")
 
     submit_button = None
 
@@ -70,7 +72,9 @@ def main():
 
                 submit_button = st.form_submit_button(label="Submit")
     else:
+        print("Entro2")
         if "session_selected" in st.session_state and st.session_state.session_selected != "Select an option..." and (st.session_state.session_selected != st.session_state.session_key):
+                print("Entro3")
                 user = SQLDataBase().get_user_by_id((st.session_state.session_selected.split('_'))[-1])
                 st.session_state.name, st.session_state.avatar_id, st.session_state.company, st.session_state.country, st.session_state.budget = user
                 model = AgentManager(st.session_state.session_selected, user, False)
