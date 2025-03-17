@@ -5,6 +5,9 @@ import base64
 import streamlit as st
 from html_templates import get_audio_template
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 audio_path = settings.AUDIO_PATH
 
@@ -62,6 +65,12 @@ def get_all_pdf_files():
         for file in files:
             all_files.append(os.path.join(root, file))
     return all_files
+
+def get_all_urls():
+    return [os.getenv("ATOM_URL_ABOUT_US"), os.getenv("ATOM_URL_AGENT_AUTOMOTIVE"), os.getenv("ATOM_URL_AGENT_EDUCATION"), 
+            os.getenv("ATOM_URL_AGENT_FINANCE"), os.getenv("ATOM_URL_INTEGRATIONS_HUBSPOT"), os.getenv("ATOM_URL_INTEGRATIONS_TALKDESK"),
+            os.getenv("ATOM_URL_INTEGRATIONS_OTHER"), os.getenv("ATOM_URL_SUCCESS_STORIES"), os.getenv("ATOM_URL_PARTNERS"),
+            os.getenv("ATOM_URL_EVENTS")]
 
 def get_first_msg(user):
     name, _, company, country, budget = user

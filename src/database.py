@@ -10,7 +10,7 @@ from langchain_chroma import Chroma
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
 from langchain_community.utilities import SQLDatabase
 from langchain.document_loaders import PyMuPDFLoader
-from utils import get_all_pdf_files, get_timestamp
+from utils import get_all_pdf_files, get_all_urls, get_timestamp
 
 load_dotenv()
 
@@ -19,7 +19,7 @@ class ChromaDataBase():
     def get_vectorstore(self):
         if not os.path.exists(settings.CHROMA_DB_PATH):
             os.makedirs(settings.CHROMA_DB_PATH)
-            web_docs = self.get_documents_from_web(os.getenv("ATOM_URL"))
+            web_docs = self.get_documents_from_web(get_all_urls())
             pdf_docs = self.get_documents_from_pdfs(get_all_pdf_files())
             all_docs = web_docs + pdf_docs
             print("ChromaDB created")
@@ -28,16 +28,23 @@ class ChromaDataBase():
             print("ChromaDB loaded")
             return self.load_db()
 
-    def get_documents_from_web(self, url):
-        loader = WebBaseLoader(url)
-        docs = loader.load()
+    def get_documents_from_web(self, urls):
+        all_docs = []
 
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size = 100,
-            chunk_overlap = 20
-        )
-        splitDocs = splitter.split_documents(docs)
-        return splitDocs
+        for url in urls:
+            loader = WebBaseLoader(url)
+            docs = loader.load()
+
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=100,
+                chunk_overlap=20
+            )
+
+            splitDocs = splitter.split_documents(docs)
+            
+            all_docs.extend(splitDocs)
+        
+        return all_docs
 
     def get_documents_from_pdfs(self, pdf_paths):
         docs = []

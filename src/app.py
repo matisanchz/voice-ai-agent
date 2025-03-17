@@ -1,4 +1,3 @@
-import os
 import time
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
@@ -67,7 +66,7 @@ def main():
                 name = st.text_input("Enter your name")
                 company = st.text_input("Enter your company")
                 country = st.selectbox("Select a Country:", get_countries())
-                budget = st.number_input("Estimated Budget (in dollars)", min_value=10, step=10)
+                budget = st.number_input("Estimated Budget (in dollars)", min_value=100, step=100)
 
                 all_filled = name and company and budget > 0
 
