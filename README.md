@@ -116,3 +116,7 @@ python -m unittest tests/test_validator.py
 4. Data is stored in the database for further analysis and segmentation.
 
 5. You can start and navigate through different sessions.
+
+## ✅ Example:
+
+In the example.pdf you will see a simple use case of the chatbot.
