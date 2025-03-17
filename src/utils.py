@@ -55,3 +55,10 @@ def get_countries():
         "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela",
         "Vietnam", "Yemen", "Zambia", "Zimbabwe"
     ]
+
+def get_all_pdf_files():
+    all_files = []
+    for root, dirs, files in os.walk(settings.PDF_PATH):
+        for file in files:
+            all_files.append(os.path.join(root, file))
+    return all_files

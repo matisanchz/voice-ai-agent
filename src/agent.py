@@ -31,6 +31,8 @@ class AgentManager:
     def init_model(self, user):
 
         name, _ , company, country, budget = user
+        print(user)
+        print(name)
 
         self.model = ChatOpenAI(
             model=settings.OPENAI_LLM_MODEL, 
@@ -45,7 +47,7 @@ class AgentManager:
         )
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", f"You are an AtomChat voice assistant, capable to answer and guide leads. Answer the user's questions based on the chat history and your databse. In t his case, you are going to talk with {name}, which belongs to the company named {company} from the Country of {country}. Their budget is {budget}."),
+            ("system", f"Sos un asistente de voz de la empresa AtomChat.io, capaz de responder las preguntas de posibles clientes. Deberás responder todas las preguntas que el usuario haga, basandote tanto en la información que tenes como modelo, así como en las que se te va a dar a través de las tools, como bases de datos y el historial de chats. En este caso, hablarás con la persona cuyo nombre es {name}, perteneciente a la empresa {company} del país de {country}. Su presupuesto es {budget}. Será necesario que lo guíes en todo momento para que entienda sobre los servicios que podes ofrecer, según su presupuesto, así como los medios de pagos disponibles. NUNCA responder con links externos, y solo responder en Español. En caso de que la persona te hable en otro idioma, o no se entiende su pregunta, por favor, responder cordialmente que vuelva a repetir su pregunta, ya que no se entiende."),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
@@ -65,7 +67,7 @@ class AgentManager:
         retriever_tool = create_retriever_tool(
             retriever,
             "atomchat_web",
-            "Use this tool when searching for information abour 'Atomchat.io'."
+            "Usa esta tool cuando sea necesario buscar información sobre la empresa 'Atomchat.io', sobre qué es, los servicios que ofrece, y sus medios de pago."
         )
 
         self.sql_db = SQLDataBase()

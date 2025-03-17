@@ -9,7 +9,8 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
 from langchain_community.utilities import SQLDatabase
-from utils import get_timestamp
+from langchain.document_loaders import PyMuPDFLoader
+from utils import get_all_pdf_files, get_timestamp
 
 load_dotenv()
 
@@ -18,9 +19,11 @@ class ChromaDataBase():
     def get_vectorstore(self):
         if not os.path.exists(settings.CHROMA_DB_PATH):
             os.makedirs(settings.CHROMA_DB_PATH)
-            docs = self.get_documents_from_web(os.getenv("ATOM_URL"))
+            web_docs = self.get_documents_from_web(os.getenv("ATOM_URL"))
+            pdf_docs = self.get_documents_from_pdfs(get_all_pdf_files())
+            all_docs = web_docs + pdf_docs
             print("ChromaDB created")
-            return self.create_db(docs)
+            return self.create_db(all_docs)
         else:
             print("ChromaDB loaded")
             return self.load_db()
@@ -35,6 +38,18 @@ class ChromaDataBase():
         )
         splitDocs = splitter.split_documents(docs)
         return splitDocs
+
+    def get_documents_from_pdfs(self, pdf_paths):
+        docs = []
+        splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20)
+
+        for path in pdf_paths:
+            loader = PyMuPDFLoader(path)
+            pdf_docs = loader.load()
+            split_docs = splitter.split_documents(pdf_docs)
+            docs.extend(split_docs)
+        
+        return docs
 
     def create_db(self, docs):
         embedding = OpenAIEmbeddings()

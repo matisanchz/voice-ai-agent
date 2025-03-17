@@ -9,3 +9,4 @@ langchain_chroma
 upstash_redis
 python-dotenv
 bs4
+pymupdf
