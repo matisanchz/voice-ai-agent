@@ -2,15 +2,17 @@
 import os
 import sqlite3
 from dotenv import load_dotenv
-from config import settings
-from langchain_community.document_loaders import WebBaseLoader
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
+from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
 from langchain_community.utilities import SQLDatabase
 from langchain.document_loaders import PyMuPDFLoader
+
 from utils import get_all_pdf_files, get_all_urls, get_timestamp
+from config import settings
 
 load_dotenv()
 
@@ -139,7 +141,7 @@ class SQLDataBase():
                 avatar INT,
                 company TEXT,
                 country TEXT,
-                budget FLOAT
+                budget INT
             )
         ''')
 

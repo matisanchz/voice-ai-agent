@@ -1,16 +1,14 @@
 import time
+import openai
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 from langchain.schema import HumanMessage
 
 from agent import AgentManager
-
 from config import settings
 from database import RedisDataBase, SQLDataBase
 from utils import get_countries, play_audio, save_audio, text_to_audio, audio_to_text
 from html_templates import css, get_bot_template, get_user_template
-import openai
-
 from validator import validate_name
 
 audio_question_file = "audio_question.mp3"

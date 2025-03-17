@@ -1,11 +1,12 @@
-import openai
 import os
-from config import settings
 import base64
-import streamlit as st
-from html_templates import get_audio_template
 from datetime import datetime
 from dotenv import load_dotenv
+import openai
+import streamlit as st
+
+from html_templates import get_audio_template
+from config import settings
 
 load_dotenv()
 

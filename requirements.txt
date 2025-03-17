@@ -10,3 +10,4 @@ upstash_redis
 python-dotenv
 bs4
 pymupdf
+unittest

@@ -1,5 +1,4 @@
 import os
-from config import settings
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
@@ -8,10 +7,10 @@ from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain.tools.retriever import create_retriever_tool
 from langchain_community.tools import QuerySQLDatabaseTool
 from langchain_community.tools.tavily_search import TavilySearchResults
-
-from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
+from langchain.memory import ConversationBufferMemory
 
+from config import settings
 from database import ChromaDataBase, SQLDataBase
 from utils import get_first_msg
 
