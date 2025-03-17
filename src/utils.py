@@ -62,3 +62,11 @@ def get_all_pdf_files():
         for file in files:
             all_files.append(os.path.join(root, file))
     return all_files
+
+def get_first_msg(user):
+    name, _, company, country, budget = user
+    return f"""
+        ¡Hola {name}, bienvenido a AtomChat.io! 👋 Soy tu asistente virtual y estoy aquí para ayudarte a conocer más sobre nuestros servicios. 📢 
+        Veo que eres parte de {company} en {country} y que tu presupuesto es {budget}. Estoy aquí para guiarte y responder cualquier consulta que tengas sobre nuestros planes, funcionalidades y medios de pago.
+        Si necesitas información específica o tienes alguna duda, dime en qué puedo ayudarte. ¡Estoy listo para asistirte! 😊 No dudes en utilizar el microfono, o la casilla de texto para enviar tus preguntas. 
+        """

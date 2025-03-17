@@ -28,7 +28,7 @@ css = '''
   color: #fff;
 }
 '''
-def get_bot_template(message, type):
+def get_bot_template(message):
     bot_template = f'''
     <div class="chat-msg bot">
         <div class="avatar">
@@ -39,7 +39,7 @@ def get_bot_template(message, type):
     '''
     return bot_template
 
-def get_user_template(message, type, user_id):
+def get_user_template(message, user_id):
     user_template = f'''
     <div class="chat-msg user">
         <div class="avatar">

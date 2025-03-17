@@ -13,13 +13,15 @@ from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories.upstash_redis import UpstashRedisChatMessageHistory
 
 from database import ChromaDataBase, RedisDataBase, SQLDataBase
-from utils import get_timestamp
+from utils import get_first_msg, get_timestamp
 
 load_dotenv()
 
-class AgentManager:
-    def __init__(self, session_key, user):
+class AgentManager():
+    def __init__(self, session_key, user, first_msg):
         self.session_key = session_key
+        self.first_msg = first_msg
+        self.user = user
         self.model = None
         self.history = None
         self.memory = None
@@ -31,8 +33,6 @@ class AgentManager:
     def init_model(self, user):
 
         name, _ , company, country, budget = user
-        print(user)
-        print(name)
 
         self.model = ChatOpenAI(
             model=settings.OPENAI_LLM_MODEL, 
@@ -47,7 +47,7 @@ class AgentManager:
         )
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", f"Sos un asistente de voz de la empresa AtomChat.io, capaz de responder las preguntas de posibles clientes. Deberás responder todas las preguntas que el usuario haga, basandote tanto en la información que tenes como modelo, así como en las que se te va a dar a través de las tools, como bases de datos y el historial de chats. En este caso, hablarás con la persona cuyo nombre es {name}, perteneciente a la empresa {company} del país de {country}. Su presupuesto es {budget}. Será necesario que lo guíes en todo momento para que entienda sobre los servicios que podes ofrecer, según su presupuesto, así como los medios de pagos disponibles. NUNCA responder con links externos, y solo responder en Español. En caso de que la persona te hable en otro idioma, o no se entiende su pregunta, por favor, responder cordialmente que vuelva a repetir su pregunta, ya que no se entiende."),
+            ("system", f"Sos un asistente de voz de la empresa AtomChat.io, capaz de responder las preguntas de posibles clientes. Deberás responder todas las preguntas que el usuario haga, basandote tanto en la información que tenes como modelo, así como en las que se te va a dar a través de las tools, como bases de datos y el historial de chats. En este caso, hablarás con la persona cuyo nombre es {name}, perteneciente a la empresa {company} del país de {country}. Su presupuesto es {budget}. Será necesario que lo guíes en todo momento para que entienda sobre los servicios que podes ofrecer, según su presupuesto, así como los medios de pagos disponibles. Tienes PROHIBIDO responder con links externos. SIEMPRE responder en Español. En caso de que la persona te hable en otro idioma, o no se entiende su pregunta, por favor, responder cordialmente que vuelva a repetir su pregunta, ya que no se entiende. Cuando hables de números, transcribilos a letras. Por ejemplo, para el número 100, decir 'cien', y no uno, cero, cero, y así sucesivamente. También hablar en términos monetarios en dólares. Si las preguntas del usuario se alejan de lo que es AtomChat, recordar que sos un asistente de voz de AtomChat, y no deberías proporcionar información ajena a esta empresa. NUNCA menciones que no tienes acceso a información detallada; solo responde sobre los datos que tengas, y en caso de que el usuario necesite información más detallada, dirigirlo a la página 'atomchat.io'"),
             MessagesPlaceholder(variable_name="chat_history"),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad")
@@ -86,6 +86,16 @@ class AgentManager:
             memory=self.memory,
             tools = tools
         )
+
+    def get_first_msg(self):
+
+        self.first_msg = False
+
+        msg = get_first_msg(self.user)
+
+        self.memory.chat_memory.add_ai_message(msg)
+
+        return msg
 
     def get_chat_memory(self):
         memory_variables = self.memory.load_memory_variables({})

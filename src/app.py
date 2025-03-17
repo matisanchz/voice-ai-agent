@@ -24,6 +24,23 @@ def main():
 
     st.title("Atom Voice Agent")
 
+    st.write(css, unsafe_allow_html=True)
+
+    redis_db = RedisDataBase()
+
+    chat_sessions = redis_db.get_sessions()
+
+    chat_sessions_with_placeholder = ["Select an option..."] + chat_sessions
+
+    selected = None
+
+    if chat_sessions and len(chat_sessions) > 0:
+        st.sidebar.title("Chat Sessions")
+        selected = st.sidebar.selectbox("Select a chat session", chat_sessions_with_placeholder, index=0, key="session_selected")
+    
+    if selected and selected != "Select an option...":
+        st.session_state.session_key = selected
+
     submit_button = None
 
     if "session_key" not in st.session_state:
@@ -56,15 +73,22 @@ def main():
 
                 submit_button = st.form_submit_button(label="Submit")
     else:
-        if "session_selected" in st.session_state and (st.session_state.session_selected != st.session_state.session_key):
-            user = SQLDataBase().get_user_by_id((st.session_state.session_selected.split('_'))[-1])
-            st.session_state.name, st.session_state.avatar_id, st.session_state.company, st.session_state.country, st.session_state.budget = user
-            model = AgentManager(st.session_state.session_selected, user)
-            st.session_state.model = model
-            st.session_state.session_key = st.session_state.session_selected
-            st.rerun()
+        if "session_selected" in st.session_state and st.session_state.session_selected != "Select an option..." and (st.session_state.session_selected != st.session_state.session_key):
+                user = SQLDataBase().get_user_by_id((st.session_state.session_selected.split('_'))[-1])
+                st.session_state.name, st.session_state.avatar_id, st.session_state.company, st.session_state.country, st.session_state.budget = user
+                model = AgentManager(st.session_state.session_selected, user, False)
+                st.session_state.model = model
+                st.session_state.session_key = st.session_state.session_selected
+                st.rerun()
         else:
-            model = st.session_state.model
+            if "model" in st.session_state:
+                model = st.session_state.model
+            else:
+                user = SQLDataBase().get_user_by_id((st.session_state.session_key.split('_'))[-1])
+                st.session_state.name, st.session_state.avatar_id, st.session_state.company, st.session_state.country, st.session_state.budget = user
+                model = AgentManager(st.session_state.session_selected, user, False)
+                st.session_state.model = model
+                st.rerun()
 
     if submit_button:
         if all_filled:
@@ -97,7 +121,7 @@ def main():
                     sql_db.insert_user(session_num, st.session_state.name, st.session_state.avatar_id, st.session_state.company,
                         st.session_state.country, st.session_state.budget)
 
-                    model = AgentManager(session_key, user)
+                    model = AgentManager(session_key, user, True)
 
                     st.session_state.model = model
 
@@ -110,18 +134,13 @@ def main():
             st.write("You have to fill all inputs.")
 
     if "session_key" in st.session_state:
-
-        st.sidebar.title("Chat Sessions")
-
-        redis_db = RedisDataBase()
-
-        chat_sessions = redis_db.get_sessions()
-
-        st.sidebar.selectbox("Select a chat session", chat_sessions, key="session_selected")
-
         st.write(css, unsafe_allow_html=True)
 
         chat_container = st.container()
+
+        if model.first_msg:
+            with chat_container:
+                model.get_first_msg()
 
         chat_memory = model.get_chat_memory()
         
@@ -135,9 +154,9 @@ def main():
             with chat_container:
                 for message in chat_memory:
                     if isinstance(message, HumanMessage):
-                        st.write(get_user_template(message.content, message.type, st.session_state.avatar_id), unsafe_allow_html=True)
+                        st.write(get_user_template(message.content, st.session_state.avatar_id), unsafe_allow_html=True)
                     else:
-                        st.write(get_bot_template(message.content, message.type), unsafe_allow_html=True)
+                        st.write(get_bot_template(message.content), unsafe_allow_html=True)
 
         if user_input:
             recorded_audio = None
@@ -154,12 +173,12 @@ def main():
         if user_input:
             
             with chat_container:
-                st.write(get_user_template(user_input, "human", st.session_state.avatar_id), unsafe_allow_html=True)
+                st.write(get_user_template(user_input, st.session_state.avatar_id), unsafe_allow_html=True)
             
             ai_response = model.process_chat(user_input)
             
             with chat_container:
-                st.write(get_bot_template(ai_response, "ai"), unsafe_allow_html=True)
+                st.write(get_bot_template(ai_response), unsafe_allow_html=True)
             
             audio_response = text_to_audio(ai_response)
 
