@@ -1,0 +1,13 @@
+streamlit
+audio_recorder_streamlit
+sqlite-3
+openai
+langchain
+langchain-openai
+langchain_community
+langchain_chroma
+upstash_redis
+python-dotenv
+bs4
+pymupdf
+unittest

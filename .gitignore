@@ -172,3 +172,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Audio recordings
+audio
+
+#Chroma
+chroma
+
+#Sql
+chatbot_db.sqlite
