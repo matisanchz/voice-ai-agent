@@ -16,9 +16,21 @@ from config import settings
 
 load_dotenv()
 
+"""
+This class provides the chroma database connection, 
+and functionalities.
+"""
 class ChromaDataBase():
 
     def get_vectorstore(self):
+        """
+        Get the Chroma vectorstore, to search for information.
+
+        Returns
+        -------
+        Chroma
+            The vectorstore.
+        """
         if not os.path.exists(settings.CHROMA_DB_PATH):
             os.makedirs(settings.CHROMA_DB_PATH)
             web_docs = self.get_documents_from_web(get_all_urls())
@@ -31,6 +43,19 @@ class ChromaDataBase():
             return self.load_db()
 
     def get_documents_from_web(self, urls):
+        """
+        Get the documents from the list of urls.
+
+        Parameters
+        ----------
+        urls : List[str]
+            List of urls to scrap.
+
+        Returns
+        -------
+        List[Document]
+            The documents splitted by chunks.
+        """
         all_docs = []
 
         for url in urls:
@@ -49,6 +74,19 @@ class ChromaDataBase():
         return all_docs
 
     def get_documents_from_pdfs(self, pdf_paths):
+        """
+        Get the pdf information from the list of paths.
+
+        Parameters
+        ----------
+        urls : List[str]
+            List of path to scrap pdf documents.
+
+        Returns
+        -------
+        List[Document]
+            The documents splitted by chunks.
+        """
         docs = []
         splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20)
 
@@ -61,21 +99,53 @@ class ChromaDataBase():
         return docs
 
     def create_db(self, docs):
+        """
+        Creates the database on disk, if not exists, and fill with the documents.
+
+        Parameters
+        ----------
+        urls : List[Document]
+            List of Documents to persist.
+
+        Returns
+        -------
+        List[]
+            The documents splitted by chunks.
+        """
         embedding = OpenAIEmbeddings()
         vectorStore = Chroma.from_documents(docs, embedding = embedding, persist_directory=settings.CHROMA_DB_PATH)
 
         return vectorStore
 
     def load_db(self):
+        """
+        Loads the database if exists.
+
+        Returns
+        -------
+        None
+        """
         embedding = OpenAIEmbeddings()
         vectorStore = Chroma(persist_directory=settings.CHROMA_DB_PATH, embedding_function=embedding)
         
         return vectorStore
 
     def get_retriever(self):
+        """
+        Gets the retriever capable to search for documents.
+
+        Returns
+        -------
+        VectorStoreRetriever
+            The retriever from ChromaDB.
+        """
         vectorStore = self.get_vectorstore()
         return vectorStore.as_retriever(search_kwargs={"k":2})
     
+"""
+This class provides the redis database connection, 
+and functionalities.
+"""
 class RedisDataBase():
 
     def __init__(self):
@@ -124,6 +194,10 @@ class RedisDataBase():
     def delete_chat(self, session_name):
         self.history.redis_client.delete("message_store:"+session_name)
 
+"""
+This class provides the sqlite database connection, 
+and functionalities.
+"""
 class SQLDataBase():
     def __init__(self):
         self.conn = sqlite3.connect("chatbot_db.sqlite")

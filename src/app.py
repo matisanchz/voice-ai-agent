@@ -15,9 +15,24 @@ audio_question_file = "audio_question.mp3"
 audio_response_file = "audio_response.mp3"
 
 def clean_variable_sesion():
+    """
+    Clear all variables from the Streamlit session.
+
+    Returns
+    -------
+    None
+    """
     st.session_state.clear()
 
 def main():
+
+    """
+    Entry point of the application.
+    
+    Returns
+    -------
+    None
+    """
 
     st.title("Atom Voice Agent")
 

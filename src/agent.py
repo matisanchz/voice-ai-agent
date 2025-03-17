@@ -16,6 +16,10 @@ from utils import get_first_msg
 
 load_dotenv()
 
+"""
+This class allows the chatbot create the LLM instance,
+and interact with their functionalities
+"""
 class AgentManager():
     def __init__(self, session_key, user, first_msg):
         self.session_key = session_key
@@ -30,7 +34,23 @@ class AgentManager():
         self.init_model(user)
 
     def init_model(self, user):
+        """
+        Initialize the model:
+        - model: OpenAI.
+        - history: To persist the chat memory.
+        - prompt: Template for the LLM.
+        - memory: Chat history.
+        - tools: To serve the agent.
 
+        Parameters
+        ----------
+        user : List[Object]
+            List of user features.
+
+        Returns
+        -------
+        None
+        """
         name, _ , company, country, budget = user
 
         self.model = ChatOpenAI(
@@ -87,6 +107,15 @@ class AgentManager():
         )
 
     def get_first_msg(self):
+        """
+        Get the first message to the user, in order 
+            to guide them.
+
+        Returns
+        -------
+        str
+            Message.
+        """
 
         self.first_msg = False
 
@@ -97,6 +126,15 @@ class AgentManager():
         return msg
 
     def get_chat_memory(self):
+        """
+        Get the chat memory
+            of the instance of the LLM.
+
+        Returns
+        -------
+        List[Dict]
+            List of messages between the user and the bot.
+        """
         memory_variables = self.memory.load_memory_variables({})
         
         chat_history = memory_variables.get("chat_history", [])
@@ -104,7 +142,19 @@ class AgentManager():
         return chat_history
         
     def process_chat(self, user_input):
+        """
+        Process the input of the user.
 
+        Parameters
+        ----------
+        user_input : str
+            The user question.
+
+        Returns
+        -------
+        str
+            Bot response.
+        """
         response = self.agentExecutor.invoke({
             "input": user_input
         })
