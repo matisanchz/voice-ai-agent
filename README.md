@@ -91,6 +91,28 @@ pip install -r requirements.txt
 
 **IMPORTANT:** Set up environment variables in a .env file.
 
+The .env file contains important information about the API KEYS. To run the project, you must define:
+
+OPENAI_API_KEY='' -> To connect with the LLM.
+TAVILY_API_KEY='' -> To search on the internet as RAG.
+UPSTASH_REDIS_REST_URL='' -> To connect with the Redis vector dabase.
+UPSTASH_REDIS_REST_TOKEN='' -> To connect with the Redis vector dabase.
+
+Also, there are environment variables to define the URLs to scrape (in this case, they are hardcoded).
+
+ATOM_URL_ABOUT_US='https://atomchat.io/acerca-de-nosotros/'
+ATOM_URL_AGENT_AUTOMOTIVE='https://atomchat.io/ai-agents-para-industria-automotriz/'
+ATOM_URL_AGENT_EDUCATION='https://atomchat.io/ai-agents-para-universidades-instituciones-educativas/'
+ATOM_URL_AGENT_FINANCE='https://atomchat.io/vende-productos-fintech-con-ai-agents/'
+ATOM_URL_INTEGRATIONS_HUBSPOT='https://atomchat.io/hubspot-con-whatsapp/'
+ATOM_URL_INTEGRATIONS_TALKDESK='https://atomchat.io/talkdesk/'
+ATOM_URL_INTEGRATIONS_OTHER='https://atomchat.io/integraciones-atom/'
+ATOM_URL_SUCCESS_STORIES='https://atomchat.io/casos-de-exito/'
+ATOM_URL_PARTNERS='https://atomchat.io/partners/'
+ATOM_URL_EVENTS='https://atomchat.io/eventos/'
+
+This information will serve to the RAG of the model.
+
 ### Run the application:
 ```bash
 streamlit run src/app.py
